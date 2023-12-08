@@ -1,134 +1,183 @@
-import React, { useState } from 'react';
-import DeleteConfirmationBox from '../others/delete-confirmation-box';
-import Filter from '../others/filter';
-import CustomPagination from '../others/pagination';
-
+import React, { useState, useEffect, useMemo } from "react";
+import DeleteConfirmationBox from "../others/delete-confirmation-box";
+import Filter from "../others/filter";
+import CustomPagination from "../others/pagination";
+import { useNavigate } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
+import LogOut from "../others/logout";
 const ITEMS_PER_PAGE = 10;
 
 const Dashboard = () => {
-    
-    const initialData = [
-        { id: 1, name: 'Item 1', description: 'Description 1' },
-        { id: 2, name: 'Item 2', description: 'Description 2' },
-        { id: 3, name: 'Item 3', description: 'Description 3' },
-        { id: 4, name: 'Item 4', description: 'Description 4' },
-        { id: 5, name: 'Item 5', description: 'Description 5' },
-        { id: 6, name: 'Item 6', description: 'Description 6' },
-        { id: 7, name: 'Item 7', description: 'Description 7' },
-        { id: 8, name: 'Item 8', description: 'Description 8' },
-        { id: 9, name: 'Item 9', description: 'Description 9' },
-        { id: 10, name: 'Item 10', description: 'Description 10' },
-        { id: 11, name: 'Item 11', description: 'Description 11' },
-        { id: 12, name: 'Item 12', description: 'Description 12' },
-        { id: 13, name: 'Item 13', description: 'Description 13' },
-        { id: 14, name: 'Item 14', description: 'Description 14' },
+  const navigate = useNavigate();
+  const [data, setData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFilter, setSelectedFilter] = useState(ITEMS_PER_PAGE);
+  const apiUrl = process.env.REACT_APP_URL;
+  const accessToken = "Bearer " + localStorage.getItem("accessToken");
+  const [selectAll, setSelectAll] = useState(false);
 
-    ];
+  const toggleSelectAll = () => {
+    if (currentItems?.length > 0) {
+      setSelectAll(!selectAll);
+    }
+  };
 
-    const [data, setData] = useState(initialData);
-    const [editingItem, setEditingItem] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedFilter, setSelectedFilter] = useState(ITEMS_PER_PAGE);
+  const fetchData = async () => {
+    try {
+      const response = await fetch(`${apiUrl}note/list`, {
+        method: "GET",
+        headers: {
+          Authorization: accessToken,
+        },
+      });
+      const fetchedData = await response.json();
+      if (response.ok) {
+        setData(fetchedData.notes);
+        toast.success(`${fetchedData.message}`);
+      } else {
+        toast.error(`${fetchedData.message}`);
+      }
+    } catch (error) {
+      toast.error("Error fetching the notes:", error);
+    }
+  };
 
-    const handleAdd = () => {
-        const newItem = { id: Date.now(), name: 'New Item', description: 'New Description' };
-        setData([...data, newItem]);
-    };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    const handleEdit = (id) => {
-        setEditingItem(id);
-    };
+  const onDelete = async (id) => {
+    try {
+      const response = await fetch(`${apiUrl}note/delete/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: accessToken,
+        },
+      });
+      const data = await response.json();
 
-    const handleSave = (id, newName, newDescription) => {
-        const updatedData = data.map((item) =>
-            item.id === id ? { ...item, name: newName, description: newDescription } : item
-        );
-        setData(updatedData);
-        setEditingItem(null);
-    };
+      if (response.ok) {
+        fetchData();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Error deleting note:", error);
+    }
+  };
+  const handleDeleteAll = async () => {
+    try {
+      const response = await fetch(`${apiUrl}note/delete-all`, {
+        method: "DELETE",
+        headers: {
+          Authorization: accessToken,
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        fetchData();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Error deleting all notes:", error);
+    }
+  };
+  const handleFilterChange = (filter) => {
+    setSelectedFilter(filter);
+    setCurrentPage(1);
+  };
 
-    const onDelete = (id) => {
-        const updatedData = data.filter((item) => item.id !== id);
-        setData(updatedData);
-    };
-    const handleFilterChange = (filter) => {
-        setSelectedFilter(filter);
-        setCurrentPage(1);
-    };
-
-    const indexOfLastItem = currentPage * selectedFilter;
-    const indexOfFirstItem = indexOfLastItem - selectedFilter;
-    const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
-    const pageNumbers = Array.from({ length: Math.ceil(data.length / selectedFilter) }, (_, i) => i + 1);
-
-    return (
-        <div className="container mt-5">
-            <h2 className="mb-4">Notes</h2>
-            <Filter selectedFilter={selectedFilter} onFilterChange={handleFilterChange} />
-            <button className="btn btn-success mb-3" onClick={handleAdd}>
-                Add Item
-            </button>
-            <table className="table table-striped">
-                <thead className="thead-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {currentItems.map((item) => (
-                        <tr key={item.id}>
-                            <td>{item.id}</td>
-                            <td>
-                                {editingItem === item.id ? (
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={item.name}
-                                        onChange={(e) => handleSave(item.id, e.target.value, item.description)}
-                                    />
-                                ) : (
-                                    item.name
-                                )}
-                            </td>
-                            <td>
-                                {editingItem === item.id ? (
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={item.description}
-                                        onChange={(e) => handleSave(item.id, item.name, e.target.value)}
-                                    />
-                                ) : (
-                                    item.description
-                                )}
-                            </td>
-                            <td>
-                                {editingItem === item.id ? (
-                                    <button className="btn btn-primary" onClick={() => handleSave(item.id, item.name, item.description)}>
-                                        Save
-                                    </button>
-                                ) : (
-                                    <>
-                                        <button className="btn btn-warning" onClick={() => handleEdit(item.id)}>
-                                            Edit
-                                        </button>
-                                        <DeleteConfirmationBox onDelete={() => onDelete(item.id)} />
-                                    </>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            <CustomPagination
-                pageNumbers={pageNumbers}
-                currentPage={currentPage}
-                onPageChange={setCurrentPage}
-            />    </div>
+  const indexOfLastItem = currentPage * selectedFilter;
+  const indexOfFirstItem = indexOfLastItem - selectedFilter;
+  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
+  const pageNumbers = useMemo(() => {
+    return Array.from(
+      { length: Math.ceil(data.length / selectedFilter) },
+      (_, i) => i + 1
     );
+  }, [data.length, selectedFilter]);
+
+  return (
+    <div className="container mt-5">
+      <Toaster />
+      <LogOut />
+      <h2 className="mb-4 text-success">Notes</h2>
+      <Filter
+        selectedFilter={selectedFilter}
+        onFilterChange={handleFilterChange}
+      />
+      <button
+        className="btn btn-success mb-3"
+        onClick={() => navigate("/add-note")}
+      >
+        Add Item
+      </button>
+
+      <table className="table table-striped">
+        <thead className="thead-dark">
+          {selectAll && (
+            <th className="text-success">
+              <DeleteConfirmationBox onDeleteAll={handleDeleteAll} />
+            </th>
+          )}
+          <tr>
+            <th className="text-success">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={toggleSelectAll}
+              />{" "}
+              Select All
+            </th>
+
+            <th className="text-success">ID</th>
+            <th className="text-success">Name</th>
+            <th className="text-success">Description</th>
+            <th className="text-success">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentItems && currentItems?.length > 0 ? (
+            currentItems?.map((item, index) => (
+              <tr key={item._id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={toggleSelectAll}
+                  />
+                </td>
+                <td>{(currentPage - 1) * selectedFilter + index + 1}</td>{" "}
+                <td>{item?.title}</td>
+                <td>{item?.description}</td>
+                <td>
+                  <button
+                    className="btn btn-success"
+                    onClick={() => navigate(`/edit-note/${item._id}`)}
+                  >
+                    Edit
+                  </button>
+                  <DeleteConfirmationBox onDelete={() => onDelete(item?._id)} />
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="text-center font-weight-bold">
+                There are no notes added yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <CustomPagination
+        pageNumbers={pageNumbers}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
+    </div>
+  );
 };
 
 export default Dashboard;

@@ -1,28 +1,32 @@
-// DeleteConfirmationDialog.js
-import React from 'react';
+import React, { useCallback } from 'react';
 import Swal from 'sweetalert2';
 
-const DeleteConfirmationBox = ({ onDelete }) => {
-  const handleDelete = () => {
+const DeleteConfirmationBox = ({ onDelete, onDeleteAll }) => {
+  const handleDelete = useCallback(() => {
     Swal.fire({
       title: 'Are you sure?',
-      text: 'You will not be able to recover this item!',
+      text: onDelete ? 'You will not be able to recover this item!' : 'This action will delete all items!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!',
+      confirmButtonText: onDelete ? 'Yes, delete it!' : 'Yes, delete all!',
     }).then((result) => {
       if (result.isConfirmed) {
-        onDelete();
-        Swal.fire('Deleted!', 'Your item has been deleted.', 'success');
+        if (onDelete) {
+          onDelete();
+          Swal.fire('Deleted!', 'Your item has been deleted.', 'success');
+        } else {
+          onDeleteAll();
+          Swal.fire('Deleted All!', 'All items have been deleted.', 'success');
+        }
       }
     });
-  };
+  }, [onDelete, onDeleteAll]);
 
   return (
     <button className="btn btn-danger ml-2" onClick={handleDelete}>
-      Delete
+      {onDelete ? 'Delete' : 'Delete All'}
     </button>
   );
 };

@@ -1,21 +1,39 @@
-import { useState, useContext } from "react"
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import ThemeContext from "../../context/themeContext"
+import toast, { Toaster } from 'react-hot-toast';
 const Login = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  
-  const theme = useContext(ThemeContext);
-
   const navigate = useNavigate()
 
-  const handleLogin = () => {
-    navigate("/dashboard")
-  }
+  const handleLogin = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_URL
+      const response = await fetch(`${apiUrl}user/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const accessToken = data.accessToken;
+        localStorage.setItem("accessToken", accessToken);
+        toast.success(`${data.message}`);
+        navigate("/dashboard");
+      } else {
+        toast.error(`${data.message}`);
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      toast.error("Something went wrong. Please try again later.");
+    }
+  };
   return (
     <div className="container mt-5">
-      <h2>Login</h2>
-      <p>THEME VALUE IN LOGIN COMP. is {theme}</p>
+          <Toaster />
+      <h2 className="text-success">Login</h2>
       <form>
         <div className="mb-3">
           <label htmlFor="email" className="form-label">
@@ -41,11 +59,11 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <button type="button" className="btn btn-primary" onClick={handleLogin}>
+        <button type="button" className="btn btn-success" onClick={handleLogin}>
           Login
         </button>
         <p className="mt-3">
-          Don't have an account? <Link to="/signup">Signup here</Link>
+          Don't have an account? <Link className="text-success" to="/signup">Signup here</Link>
         </p>
       </form>
     </div>

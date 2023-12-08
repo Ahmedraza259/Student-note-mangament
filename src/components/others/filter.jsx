@@ -9,10 +9,10 @@ const Filter = ({ selectedFilter, onFilterChange }) => {
         value={selectedFilter}
         onChange={(e) => onFilterChange(Number(e.target.value))}
       >
-        <option value={5}>0-5</option>
-        <option value={10}>0-10</option>
-        <option value={15}>0-15</option>
-        <option value={20}>0-20</option>
+        <option value={5}>5</option>
+        <option value={10}>10</option>
+        <option value={15}>15</option>
+        <option value={20}>20</option>
       </select>
     </div>
   );
