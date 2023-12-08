@@ -10,6 +10,11 @@
 
 # production
 /build
+# dependency logger
+package-lock.json
+
+# dotenv environment variable files
+.env
 
 # misc
 .DS_Store
